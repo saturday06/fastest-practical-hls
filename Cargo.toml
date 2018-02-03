@@ -1,0 +1,18 @@
+[package]
+name = "fastest-practical-cactus"
+version = "0.1.0"
+authors = ["Isamu Mogi <isamu@leafytree.jp>"]
+build = "build.rs"
+
+[dependencies]
+bytes = "0.4"
+hyper = "0.11"
+futures = "0.1"
+openh264-sys = "1"
+magick_rust = "0.7"
+chrono = "0.4"
+libc = "0.2"
+tokio-core = "0.1"
+
+[dependencies.ffmpeg-sys]
+version = "3"
