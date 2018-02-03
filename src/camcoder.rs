@@ -35,6 +35,7 @@ pub struct Camcorder {
     ts_duration_ms: u64,
     mpeg_ts: MpegTs,
     h264: Vec<u8>,
+    ts: Bytes,
 }
 
 impl Camcorder {
@@ -192,8 +193,9 @@ impl Camcorder {
             frame_duration_ms: frame_duration_ms,
             current_ms: 0,
             ts_duration_ms: ts_duration_ms,
-            mpeg_ts: MpegTs::new(frame_duration_ms as i32),
+            mpeg_ts: unsafe { MpegTs::new() },
             h264: Vec::new(),
+            ts: Bytes::new(),
         }
     }
 
@@ -269,11 +271,13 @@ impl Camcorder {
         pic.pData[0] = self.y_pixels.as_mut_ptr();
         pic.pData[1] = self.u_pixels.as_mut_ptr();
         pic.pData[2] = self.v_pixels.as_mut_ptr();
-        if self.h264.is_empty() {
+
+        let force_intra_frame = self.ts.is_empty();
+        if force_intra_frame {
             let r =
                 unsafe { (**self.svc_encoder).ForceIntraFrame.unwrap()(self.svc_encoder, true) };
             if r != 0 {
-                panic!("GetDefaultParams: {}", r);
+                panic!("ForceIntraFrame: {}", r);
             }
         }
 
@@ -282,7 +286,7 @@ impl Camcorder {
         };
         if r != 0 {
             if r != 0 {
-                panic!("GetDefaultParams: {}", r);
+                panic!("EncodeFrame: {}", r);
             }
         }
 
@@ -323,19 +327,19 @@ impl Camcorder {
             }
         }
 
+        unsafe { self.mpeg_ts.write(&mut self.h264, self.current_ms - self.frame_duration_ms, self.frame_duration_ms, force_intra_frame) };
+        self.h264.clear();
+
         if self.current_ms % self.ts_duration_ms != 0 {
             return true;
         }
-        let segment = unsafe {
-            self.mpeg_ts
-                .create(&self.h264, self.current_ms - self.ts_duration_ms)
-        };
-        {
-            let mut hls = self.hls.write().expect("Failed to lock hls segments");
-            hls.add_new_segment(self.ts_duration_ms, Arc::new(RwLock::new(LazyBytes {bytes: segment, completion: true})));
-        }
-        self.h264.clear();
-        /*
+
+        let segment = unsafe { self.mpeg_ts.flush() };
+        let mut hls = self.hls.write().expect("Failed to lock hls segments");
+        hls.add_new_segment(self.ts_duration_ms, segment);
+
+        self.mpeg_ts = unsafe { MpegTs::new() };
+/*
         let mut file = OpenOptions::new()
             .create(true)
             .append(true)
