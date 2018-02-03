@@ -10,6 +10,9 @@ use std::error;
 use std::io;
 use std::path::PathBuf;
 use std::fs::{canonicalize, File};
+use std::error::Error;
+use std::path::PathBuf;
+use std::fs::{File, canonicalize};
 use std::io::copy;
 use std::thread;
 use std::time;
@@ -41,7 +44,7 @@ impl Service for AutomaticCactus {
     type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, req: Request) -> Self::Future {
-        const SEGMENT_PREFIX: &str = "/segment";
+        const SEGMENT_PREFIX: &str = "/segment/";
         Box::new(futures::future::ok(match (req.method(), req.path()) {
             (&Get, path) if path.starts_with(SEGMENT_PREFIX) => {
                 match path.replace(SEGMENT_PREFIX, "")

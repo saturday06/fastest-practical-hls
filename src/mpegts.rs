@@ -1,7 +1,6 @@
 use bytes::Bytes;
-use std::os::raw::{c_int, c_uchar};
-use std::slice::{from_raw_parts, from_raw_parts_mut};
-use std::cmp::min;
+use std::os::raw::c_int;
+use std::slice::from_raw_parts;
 use std::ptr::null_mut;
 use ffmpeg_sys::*;
 use libc;
@@ -10,9 +9,26 @@ use std::ffi::CString;
 pub struct MpegTs {
     output_format: *mut AVFormatContext,
     output_io: *mut AVIOContext,
-    output_io_buf: *mut c_uchar,
     output_video_stream: *mut AVStream,
     output: Box<Output>,
+}
+
+impl Drop for MpegTs {
+    fn drop(&mut self) {
+        unsafe {
+            if !self.output_format.is_null() {
+                avformat_free_context(self.output_format);
+                self.output_format = null_mut();
+            }
+            if !self.output_io.is_null() {
+                av_free(self.output_io as *mut libc::c_void);
+                self.output_io = null_mut();
+            }
+            if !self.output_video_stream.is_null() {
+                self.output_video_stream = null_mut();
+            }
+        }
+    }
 }
 
 struct Output {
@@ -49,13 +65,12 @@ fn default_av_packet() -> AVPacket {
 }
 
 impl MpegTs {
-    pub unsafe fn new() -> MpegTs {
+    pub unsafe fn new(width: usize, height: usize) -> MpegTs {
         const AVIO_CTX_BUFFER_SIZE: usize = 8192;
 
         let mut obj = MpegTs {
             output_format: null_mut(),
             output_io: null_mut(),
-            output_io_buf: null_mut(),
             output: Box::new(Output { data: Bytes::new() }),
             output_video_stream: null_mut(),
         };
@@ -66,13 +81,13 @@ impl MpegTs {
             panic!("Failed to alloc output context: {}", r)
         }
 
-        obj.output_io_buf = av_mallocz(AVIO_CTX_BUFFER_SIZE) as *mut u8;
-        if obj.output_io_buf.is_null() {
+        let output_io_buf = av_mallocz(AVIO_CTX_BUFFER_SIZE) as *mut u8;
+        if output_io_buf.is_null() {
             panic!("Failed to alloc output io buf");
         }
 
         obj.output_io = avio_alloc_context(
-            obj.output_io_buf,
+            output_io_buf,
             AVIO_CTX_BUFFER_SIZE as i32,
             1,
             obj.output.as_mut() as *mut Output as *mut libc::c_void,
@@ -97,8 +112,8 @@ impl MpegTs {
         codecpar.bits_per_raw_sample = 8;
         codecpar.profile = 578;
         codecpar.level = 41;
-        codecpar.width = 128;
-        codecpar.height = 96;
+        codecpar.width = width as i32;
+        codecpar.height = height as i32;
         codecpar.sample_aspect_ratio.den = 1;
 
         r = avformat_write_header(obj.output_format, null_mut());

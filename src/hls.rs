@@ -31,7 +31,7 @@ impl Hls {
             lazy_bytes: lazy_bytes,
             duration_ms: duration_ms,
         });
-        while self.segments.len() > 10 {
+        while self.segments.len() > 20 {
             self.segments.pop_front();
         }
     }
@@ -51,6 +51,7 @@ impl Hls {
 #EXT-X-TARGETDURATION:1
 #EXT-X-START:TIME-OFFSET=-1.05,PRECISE=NO
 #EXT-X-MEDIA-SEQUENCE:{}
+#EXT-X-START:TIME-OFFSET=0
 
 ",
             sequence

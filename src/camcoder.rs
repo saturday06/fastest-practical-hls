@@ -35,7 +35,6 @@ pub struct Camcorder {
     ts_duration_ms: u64,
     mpeg_ts: MpegTs,
     h264: Vec<u8>,
-    ts: Bytes,
 }
 
 impl Camcorder {
@@ -193,13 +192,17 @@ impl Camcorder {
             frame_duration_ms: frame_duration_ms,
             current_ms: 0,
             ts_duration_ms: ts_duration_ms,
-            mpeg_ts: unsafe { MpegTs::new() },
+            mpeg_ts: unsafe { MpegTs::new(width, height) },
             h264: Vec::new(),
-            ts: Bytes::new(),
         }
     }
 
     pub fn run(&mut self) -> bool {
+        let force_intra_frame = if self.current_ms % self.ts_duration_ms == 0 {
+            true
+        } else {
+            false
+        };
         self.current_ms += self.frame_duration_ms;
         let now = Local::now();
         let text = now.format("%Y-%m-%d\n%H:%M:%S\n%f").to_string();
@@ -272,7 +275,6 @@ impl Camcorder {
         pic.pData[1] = self.u_pixels.as_mut_ptr();
         pic.pData[2] = self.v_pixels.as_mut_ptr();
 
-        let force_intra_frame = self.ts.is_empty();
         if force_intra_frame {
             let r =
                 unsafe { (**self.svc_encoder).ForceIntraFrame.unwrap()(self.svc_encoder, true) };
@@ -338,7 +340,7 @@ impl Camcorder {
         let mut hls = self.hls.write().expect("Failed to lock hls segments");
         hls.add_new_segment(self.ts_duration_ms, segment);
 
-        self.mpeg_ts = unsafe { MpegTs::new() };
+        self.mpeg_ts = unsafe { MpegTs::new(self.width, self.height) };
 /*
         let mut file = OpenOptions::new()
             .create(true)
