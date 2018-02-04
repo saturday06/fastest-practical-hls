@@ -39,8 +39,8 @@ pub struct Camcorder {
 
 impl Camcorder {
     pub fn new(hls: Arc<RwLock<Hls>>, frame_duration_ms: u64, ts_duration_ms: u64) -> Camcorder {
-        let width = 128;
-        let height = 96;
+        let width = 480;
+        let height = 320;
         let mut text_fill_color = PixelWand::new();
         text_fill_color
             .set_color("white")

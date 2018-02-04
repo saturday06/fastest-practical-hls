@@ -1,8 +1,12 @@
 use std::sync::{Arc, RwLock};
 use std::collections::VecDeque;
 use bytes::Bytes;
+<<<<<<< 054af9bb99077d52c4215a5b79a00c3701891d45
 use lazybytes::LazyBytes;
 use realtimeoutput::RealtimeOutput;
+=======
+//use realtimeoutput::RealtimeOutput;
+>>>>>>> nazo
 
 pub struct Segment {
     index: u64,
@@ -38,6 +42,7 @@ impl Hls {
     }
 
     pub fn generate_playlist(&self) -> String {
+<<<<<<< 054af9bb99077d52c4215a5b79a00c3701891d45
         let skip = 1;
         let sequence = self.segments
             .iter()
@@ -51,8 +56,14 @@ impl Hls {
 #EXT-X-VERSION:6
 #EXT-X-TARGETDURATION:1
 #EXT-X-START:TIME-OFFSET=-1.05,PRECISE=NO
+=======
+        let sequence = self.segments.front().map(|segment| segment.index).unwrap_or(0);
+        let mut playlist = format!(r"#EXTM3U
+#EXT-X-VERSION:6
+#EXT-X-TARGETDURATION:3
+#EXT-X-START:TIME-OFFSET=-3.00,PRECISE=NO
+>>>>>>> nazo
 #EXT-X-MEDIA-SEQUENCE:{}
-#EXT-X-START:TIME-OFFSET=0
 
 ",
             sequence

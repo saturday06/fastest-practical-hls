@@ -1,7 +1,12 @@
 use futures;
 use hyper;
 use futures::future::Future;
+<<<<<<< 054af9bb99077d52c4215a5b79a00c3701891d45
 use hyper::{Body, Chunk, Get, StatusCode};
+=======
+use hyper::StatusCode;
+use hyper::Get;
+>>>>>>> nazo
 use hyper::header::{ContentLength, ContentType, Location};
 use hyper::server::{Request, Response, Service};
 use hls::Hls;
@@ -93,6 +98,11 @@ impl Service for AutomaticCactus {
             (&Get, "/") => {
                 Response::new()
                     .with_header(Location::new("/index.html?src=index.m3u8&enableStreaming=true&autoRecoverError=true&enableWorker=true&dumpfMP4=false&levelCapping=-1&defaultAudioCodec=undefined&widevineLicenseURL="))
+                    .with_status(StatusCode::SeeOther)
+            }
+            (&Get, "/") => {
+                Response::new()
+                    .with_header(Location::new("/index.html?src=index.m3u8&enableStreaming=true&autoRecoverError=true&enableWorker=true&dumpfMP4=false&levelCapping=-1&defaultAudioCodec=undefined&widevineLicenseURL=".to_owned()))
                     .with_status(StatusCode::SeeOther)
             }
             (&Get, file_path_str) => {

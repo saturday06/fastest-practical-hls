@@ -1,7 +1,7 @@
 use futures::{Async, Poll};
 use futures::stream::Stream;
 use std::io;
-
+/*
 pub struct RealtimeOutput {
     processed_bytes: usize
 }
@@ -22,3 +22,4 @@ impl Stream for RealtimeOutput {
         Ok(Async::NotReady)
     }
 }
+*/
