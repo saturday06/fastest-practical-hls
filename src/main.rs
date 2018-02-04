@@ -14,6 +14,7 @@ mod hls;
 mod camcoder;
 mod mpegts;
 mod lazybytes;
+mod realtimeoutput;
 
 use hyper::server::Http;
 use std::sync::Arc;

@@ -2,6 +2,7 @@ use std::sync::{Arc, RwLock};
 use std::collections::VecDeque;
 use bytes::Bytes;
 use lazybytes::LazyBytes;
+use realtimeoutput::RealtimeOutput;
 
 pub struct Segment {
     index: u64,
