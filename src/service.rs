@@ -1,39 +1,85 @@
 use futures;
 use hyper;
 use futures::future::Future;
-use hyper::StatusCode;
-use hyper::Get;
+use hyper::{Body, Chunk, Get, StatusCode};
 use hyper::header::{ContentLength, ContentType, Location};
 use hyper::server::{Request, Response, Service};
 use hls::Hls;
 use std::sync::{Arc, RwLock};
-use std::error::Error;
+use std::error;
+use std::io;
 use std::path::PathBuf;
 use std::fs::{canonicalize, File};
 use std::io::copy;
+use std::thread;
+use std::time;
+use segment::SegmentStream;
+use futures::Sink;
+use futures::executor::spawn;
+use futures::stream::Stream;
+use std::error::Error;
+use futures_cpupool::CpuPool;
 
 pub struct AutomaticCactus {
     hls: Arc<RwLock<Hls>>,
+    cpu_pool: CpuPool,
 }
 
 impl AutomaticCactus {
-    pub fn new(hls: Arc<RwLock<Hls>>) -> AutomaticCactus {
-        AutomaticCactus { hls: hls }
+    pub fn new(hls: Arc<RwLock<Hls>>, cpu_pool: CpuPool) -> AutomaticCactus {
+        AutomaticCactus {
+            hls: hls,
+            cpu_pool: cpu_pool,
+        }
     }
 }
 
 impl Service for AutomaticCactus {
     type Request = Request;
-    type Response = Response;
     type Error = hyper::Error;
+    type Response = Response<SegmentStream>;
     type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, req: Request) -> Self::Future {
+        Box::new(futures::future::ok(
+            Response::new().with_body(SegmentStream::new_with_string("Foo".to_owned())),
+        ))
+
+        /*
         const SEGMENT_PREFIX: &str = "/segment";
         Box::new(futures::future::ok(match (req.method(), req.path()) {
             (&Get, "/stream") => {
+                let (mut sender, body) = Body::pair();
+                let s = Segment::new();
+                //self.cpu_pool.spawn(sender.send_all(s));
+
+                /*
+                sender.start_send(Ok(Chunk::from("foo"))).expect("Oops1");
+                sender.poll_complete().expect("Oops2");
+                spawn(sender.start_send(Ok(Chunk::from("foo"))));
+
+                */
+                //sender.send_all(Segment::new().map_err(
+                //    |e| io::Error::new(io::ErrorKind::Other, "oh no!")));
+                /*
+                thread::spawn(move || {
+                    thread::sleep(time::Duration::from_millis(1000));
+                    sender.start_send(Ok(Chunk::from("foo"))).expect("Oops1");
+                    sender.poll_complete().expect("Oops2");
+                    thread::sleep(time::Duration::from_millis(1000));
+                    sender.start_send(Ok(Chunk::from("foo"))).expect("Oops1");
+                    sender.poll_complete().expect("Oops2");
+                    thread::sleep(time::Duration::from_millis(1000));
+                    sender.start_send(Ok(Chunk::from("foo"))).expect("Oops1");
+                    sender.poll_complete().expect("Oops2");
+                    thread::sleep(time::Duration::from_millis(1000));
+                    sender.start_send(Ok(Chunk::from("foo"))).expect("Oops1");
+                    sender.poll_complete().expect("Oops2");
+                    thread::sleep(time::Duration::from_millis(1000));
+                });
+*/
                 Response::new()
-                    .with_body("Hello")
+                    .with_body(s)
             }
             (&Get, path) if path.starts_with(SEGMENT_PREFIX) => {
                 match path.replace(SEGMENT_PREFIX, "")
@@ -107,6 +153,6 @@ impl Service for AutomaticCactus {
                 }
             }
             _ => Response::new().with_status(StatusCode::NotFound),
-        }))
+        }))*/
     }
 }

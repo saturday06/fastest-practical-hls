@@ -19,7 +19,6 @@ impl Hls {
             last_index: 0,
             segments: VecDeque::new(),
         };
-        // hls.add_new_segment(Bytes::from(vec![70, 71, 72, 73]));
 
         Arc::new(RwLock::new(hls))
     }
