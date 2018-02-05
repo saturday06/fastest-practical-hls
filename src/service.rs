@@ -9,7 +9,7 @@ use hls::Hls;
 use std::sync::{Arc, RwLock};
 use std::error::Error;
 use std::path::{Path, PathBuf};
-use std::fs::{File, canonicalize};
+use std::fs::{canonicalize, File};
 use std::io::copy;
 
 pub struct AutomaticCactus {
@@ -18,9 +18,7 @@ pub struct AutomaticCactus {
 
 impl AutomaticCactus {
     pub fn new(hls: Arc<RwLock<Hls>>) -> AutomaticCactus {
-        AutomaticCactus {
-            hls: hls,
-        }
+        AutomaticCactus { hls: hls }
     }
 }
 
@@ -90,21 +88,15 @@ impl Service for AutomaticCactus {
                     Ok(mut file) => {
                         let mut buf: Vec<u8> = Vec::new();
                         match copy(&mut file, &mut buf) {
-                            Ok(_) => {
-                                Response::new()
-                                    .with_header(ContentLength(buf.len() as u64))
-                                    .with_body(buf)
-                            },
-                            Err(_) => {
-                                Response::new().with_status(StatusCode::NotFound)
-                            },
+                            Ok(_) => Response::new()
+                                .with_header(ContentLength(buf.len() as u64))
+                                .with_body(buf),
+                            Err(_) => Response::new().with_status(StatusCode::NotFound),
                         }
-                    },
-                    Err(_) => {
-                        Response::new().with_status(StatusCode::NotFound)
-                    },
+                    }
+                    Err(_) => Response::new().with_status(StatusCode::NotFound),
                 }
-            },
+            }
             _ => Response::new().with_status(StatusCode::NotFound),
         }))
     }

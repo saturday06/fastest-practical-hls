@@ -119,7 +119,7 @@ impl MpegTs {
         (*self.input_video_format).pb = self.input_video_io;
         let input_video_file_name =
             CString::new("input.h264").expect("Oops! can't parse input file name");
-        
+
         let mut r = avformat_open_input(
             &mut self.input_video_format,
             input_video_file_name.as_ptr() as *const i8,
@@ -132,14 +132,19 @@ impl MpegTs {
 
         r = avformat_find_stream_info(self.input_video_format, null_mut());
         if r < 0 {
-            panic!("Failed to find video stream info: {}", r)            
+            panic!("Failed to find video stream info: {}", r)
         }
 
         let output_file_name =
             CString::new("output.ts").expect("Oops! can't parse output file name");
-        r = avformat_alloc_output_context2(&mut self.output_format, null_mut(), null_mut(), output_file_name.as_ptr());
+        r = avformat_alloc_output_context2(
+            &mut self.output_format,
+            null_mut(),
+            null_mut(),
+            output_file_name.as_ptr(),
+        );
         if r < 0 {
-            panic!("Failed to alloc output context: {}", r)            
+            panic!("Failed to alloc output context: {}", r)
         }
 
         self.output_io_buf = av_mallocz(AVIO_CTX_BUFFER_SIZE) as *mut u8;
@@ -168,7 +173,7 @@ impl MpegTs {
             let input_stream = *((*self.input_video_format).streams.offset(i));
             if (*((*input_stream).codecpar)).codec_type != AVMediaType::AVMEDIA_TYPE_VIDEO {
                 continue;
-            }            
+            }
             let output_stream = avformat_new_stream(self.output_format, null_mut());
             if output_stream.is_null() {
                 panic!("Failed to allocate new video stream")
@@ -177,13 +182,18 @@ impl MpegTs {
             output_video_stream_index_opt = Some((*output_stream).index);
             r = avcodec_parameters_copy((*output_stream).codecpar, (*input_stream).codecpar);
             if r < 0 {
-                panic!("Failed to copy parameters to stream {:?}: {}", output_video_stream_index_opt, r);
+                panic!(
+                    "Failed to copy parameters to stream {:?}: {}",
+                    output_video_stream_index_opt, r
+                );
             }
             (*output_stream).time_base = (*input_stream).time_base;
-            break
+            break;
         }
-        let input_video_stream_index = input_video_stream_index_opt.expect("Failed to find video input stream index");
-        let output_video_stream_index = output_video_stream_index_opt.expect("Failed to find video output stream index");
+        let input_video_stream_index =
+            input_video_stream_index_opt.expect("Failed to find video input stream index");
+        let output_video_stream_index =
+            output_video_stream_index_opt.expect("Failed to find video output stream index");
 
         r = avformat_write_header(self.output_format, null_mut());
         if r < 0 {
@@ -192,24 +202,26 @@ impl MpegTs {
 
         let mut current_ms = start_ms as i64;
         loop {
-            let output_stream = *((*self.output_format).streams.offset(output_video_stream_index as isize));
+            let output_stream = *((*self.output_format)
+                .streams
+                .offset(output_video_stream_index as isize));
             let output_video_time_base = (*output_stream).time_base;
 
             r = av_read_frame(self.input_video_format, &mut self.packet);
             if r == AVERROR_EOF {
-                break
+                break;
             } else if r < 0 {
                 panic!("Failed to read video frame: {}", r)
             }
             if self.packet.stream_index != input_video_stream_index {
-                continue
+                continue;
             }
-            
+
             let den = output_video_time_base.den as i64;
             let num = output_video_time_base.num as i64;
             self.packet.pts = current_ms * den / (num * 1000);
             self.packet.dts = self.packet.pts;
-            self.packet.duration = self.frame_duration_ms as i64 * den / (num  * 1000);
+            self.packet.duration = self.frame_duration_ms as i64 * den / (num * 1000);
             self.packet.pos = -1;
             self.packet.stream_index = output_video_stream_index;
             r = av_interleaved_write_frame(self.output_format, &mut self.packet);
@@ -220,11 +232,9 @@ impl MpegTs {
 
             current_ms += self.frame_duration_ms as i64;
         }
-        
+
         av_write_trailer(self.output_format);
 
         output.data
     }
 }
-
-

@@ -38,15 +38,28 @@ impl Hls {
 
     pub fn generate_playlist(&self) -> String {
         let skip = 1;
-        let sequence = self.segments.iter().rev().skip(skip).next().map(|segment| segment.index).unwrap_or(0);
-        let mut playlist = format!(r"#EXTM3U
+        let sequence = self.segments
+            .iter()
+            .rev()
+            .skip(skip)
+            .next()
+            .map(|segment| segment.index)
+            .unwrap_or(0);
+        let mut playlist = format!(
+            r"#EXTM3U
 #EXT-X-TARGETDURATION:10
 #EXT-X-VERSION:3
 #EXT-X-MEDIA-SEQUENCE:{}
 
-", sequence);
+",
+            sequence
+        );
         for segment in &self.segments {
-            playlist.push_str(&format!("#EXTINF:{},\n/segment{:09}.ts\n", segment.duration_ms as f64 / 1000.0, segment.index));
+            playlist.push_str(&format!(
+                "#EXTINF:{},\n/segment{:09}.ts\n",
+                segment.duration_ms as f64 / 1000.0,
+                segment.index
+            ));
         }
         playlist
     }
