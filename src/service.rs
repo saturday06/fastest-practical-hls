@@ -3,7 +3,7 @@ use hyper;
 use futures::future::Future;
 use hyper::StatusCode;
 use hyper::Get;
-use hyper::header::{ContentLength, ContentType};
+use hyper::header::{ContentLength, ContentType, Location};
 use hyper::server::{Request, Response, Service};
 use hls::Hls;
 use std::sync::{Arc, RwLock};
@@ -58,7 +58,7 @@ impl Service for AutomaticCactus {
                     }
                 }
             }
-            (&Get, "/") | (&Get, "/index.m3u8") => {
+            (&Get, "/index.m3u8") => {
                 let playlist = {
                     let lock = self.hls
                         .as_ref()
@@ -75,6 +75,11 @@ impl Service for AutomaticCactus {
                     .with_header(ContentLength(playlist.len() as u64))
                     .with_header(ContentType(content_type))
                     .with_body(playlist)
+            }
+            (&Get, "/") => {
+                Response::new()
+                    .with_header(Location::new("/index.html?src=index.m3u8&enableStreaming=true&autoRecoverError=true&enableWorker=true&dumpfMP4=false&levelCapping=-1&defaultAudioCodec=undefined&widevineLicenseURL="))
+                    .with_status(StatusCode::SeeOther)
             }
             (&Get, file_path_str) => {
                 let file_path = PathBuf::from(file_path_str);
