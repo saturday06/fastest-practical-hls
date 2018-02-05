@@ -31,6 +31,10 @@ impl Service for AutomaticCactus {
     fn call(&self, req: Request) -> Self::Future {
         const SEGMENT_PREFIX: &str = "/segment";
         Box::new(futures::future::ok(match (req.method(), req.path()) {
+            (&Get, "/stream") => {
+                Response::new()
+                    .with_body("Hello")
+            }
             (&Get, path) if path.starts_with(SEGMENT_PREFIX) => {
                 match path.replace(SEGMENT_PREFIX, "")
                     .replace(".ts", "")
