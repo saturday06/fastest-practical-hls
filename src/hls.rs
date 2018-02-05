@@ -15,7 +15,7 @@ pub struct Hls {
 
 impl Hls {
     pub fn new() -> Arc<RwLock<Hls>> {
-        let mut hls = Hls {
+        let hls = Hls {
             last_index: 0,
             segments: VecDeque::new(),
         };
@@ -31,7 +31,7 @@ impl Hls {
             bytes: bytes,
             duration_ms: duration_ms,
         });
-        while self.segments.len() > 3 {
+        while self.segments.len() > 10 {
             self.segments.pop_front();
         }
     }
@@ -47,8 +47,9 @@ impl Hls {
             .unwrap_or(0);
         let mut playlist = format!(
             r"#EXTM3U
-#EXT-X-TARGETDURATION:10
-#EXT-X-VERSION:3
+#EXT-X-VERSION:6
+#EXT-X-TARGETDURATION:1
+#EXT-X-START:TIME-OFFSET=-1.05,PRECISE=YES
 #EXT-X-MEDIA-SEQUENCE:{}
 
 ",
@@ -56,7 +57,7 @@ impl Hls {
         );
         for segment in &self.segments {
             playlist.push_str(&format!(
-                "#EXTINF:{},\n/segment{:09}.ts\n",
+                "#EXTINF:{},\nsegment{:09}.ts\n",
                 segment.duration_ms as f64 / 1000.0,
                 segment.index
             ));

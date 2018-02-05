@@ -11,8 +11,6 @@ use std::ptr::{null, null_mut};
 use std::os::raw::{c_int, c_void};
 use openh264_sys::*;
 use std::slice::from_raw_parts;
-use std::fs::OpenOptions;
-use std::io::Write;
 use mpegts::MpegTs;
 
 pub struct Camcorder {

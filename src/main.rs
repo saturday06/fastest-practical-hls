@@ -21,7 +21,6 @@ use tokio_core::reactor::{Core, Interval};
 use std::time::Duration;
 use futures::Stream;
 use ffmpeg_sys::av_register_all;
-use std::path::Path;
 
 fn main() {
     std::process::exit({

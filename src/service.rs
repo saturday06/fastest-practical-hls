@@ -8,7 +8,7 @@ use hyper::server::{Request, Response, Service};
 use hls::Hls;
 use std::sync::{Arc, RwLock};
 use std::error::Error;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::fs::{canonicalize, File};
 use std::io::copy;
 
