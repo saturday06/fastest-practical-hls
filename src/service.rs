@@ -41,46 +41,8 @@ impl Service for AutomaticCactus {
     type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, req: Request) -> Self::Future {
-        Box::new(futures::future::ok(
-            Response::new().with_body(SegmentStream::new_with_string("Foo".to_owned())),
-        ))
-
-        /*
         const SEGMENT_PREFIX: &str = "/segment";
         Box::new(futures::future::ok(match (req.method(), req.path()) {
-            (&Get, "/stream") => {
-                let (mut sender, body) = Body::pair();
-                let s = Segment::new();
-                //self.cpu_pool.spawn(sender.send_all(s));
-
-                /*
-                sender.start_send(Ok(Chunk::from("foo"))).expect("Oops1");
-                sender.poll_complete().expect("Oops2");
-                spawn(sender.start_send(Ok(Chunk::from("foo"))));
-
-                */
-                //sender.send_all(Segment::new().map_err(
-                //    |e| io::Error::new(io::ErrorKind::Other, "oh no!")));
-                /*
-                thread::spawn(move || {
-                    thread::sleep(time::Duration::from_millis(1000));
-                    sender.start_send(Ok(Chunk::from("foo"))).expect("Oops1");
-                    sender.poll_complete().expect("Oops2");
-                    thread::sleep(time::Duration::from_millis(1000));
-                    sender.start_send(Ok(Chunk::from("foo"))).expect("Oops1");
-                    sender.poll_complete().expect("Oops2");
-                    thread::sleep(time::Duration::from_millis(1000));
-                    sender.start_send(Ok(Chunk::from("foo"))).expect("Oops1");
-                    sender.poll_complete().expect("Oops2");
-                    thread::sleep(time::Duration::from_millis(1000));
-                    sender.start_send(Ok(Chunk::from("foo"))).expect("Oops1");
-                    sender.poll_complete().expect("Oops2");
-                    thread::sleep(time::Duration::from_millis(1000));
-                });
-*/
-                Response::new()
-                    .with_body(s)
-            }
             (&Get, path) if path.starts_with(SEGMENT_PREFIX) => {
                 match path.replace(SEGMENT_PREFIX, "")
                     .replace(".ts", "")
@@ -96,7 +58,7 @@ impl Service for AutomaticCactus {
                     } {
                         Some(segment) => Response::new()
                             .with_header(ContentLength(segment.len() as u64))
-                            .with_body(segment),
+                            .with_body(SegmentStream::from(segment)),
                         _ => Response::new().with_status(StatusCode::NotFound),
                     },
                     Err(err) => {
@@ -104,7 +66,7 @@ impl Service for AutomaticCactus {
                         Response::new()
                             .with_header(ContentLength(body.len() as u64))
                             .with_status(StatusCode::BadRequest)
-                            .with_body(body)
+                            .with_body(SegmentStream::from(body))
                     }
                 }
             }
@@ -124,7 +86,7 @@ impl Service for AutomaticCactus {
                 Response::new()
                     .with_header(ContentLength(playlist.len() as u64))
                     .with_header(ContentType(content_type))
-                    .with_body(playlist)
+                    .with_body(SegmentStream::from(playlist))
             }
             (&Get, "/") => {
                 Response::new()
@@ -145,7 +107,7 @@ impl Service for AutomaticCactus {
                         match copy(&mut file, &mut buf) {
                             Ok(_) => Response::new()
                                 .with_header(ContentLength(buf.len() as u64))
-                                .with_body(buf),
+                                .with_body(SegmentStream::from(buf)),
                             Err(_) => Response::new().with_status(StatusCode::NotFound),
                         }
                     }
@@ -153,6 +115,6 @@ impl Service for AutomaticCactus {
                 }
             }
             _ => Response::new().with_status(StatusCode::NotFound),
-        }))*/
+        }))
     }
 }

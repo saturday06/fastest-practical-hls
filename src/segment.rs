@@ -23,12 +23,38 @@ impl SegmentStream {
             segment: segment,
         }
     }
+}
 
-    pub fn new_with_string(content: String) -> SegmentStream {
+impl From<Bytes> for SegmentStream {
+    fn from(bytes: Bytes) -> Self {
         SegmentStream {
             processed_bytes: 0,
             segment: Arc::new(RwLock::new(Segment {
-                bytes: Bytes::from(content),
+                bytes: bytes,
+                completion: true,
+            })),
+        }
+    }
+}
+
+impl From<String> for SegmentStream {
+    fn from(string: String) -> Self {
+        SegmentStream {
+            processed_bytes: 0,
+            segment: Arc::new(RwLock::new(Segment {
+                bytes: Bytes::from(string),
+                completion: true,
+            })),
+        }
+    }
+}
+
+impl From<Vec<u8>> for SegmentStream {
+    fn from(vec: Vec<u8>) -> Self {
+        SegmentStream {
+            processed_bytes: 0,
+            segment: Arc::new(RwLock::new(Segment {
+                bytes: Bytes::from(vec),
                 completion: true,
             })),
         }
