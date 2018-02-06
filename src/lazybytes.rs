@@ -6,30 +6,30 @@ use futures::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use bytes::Bytes;
 
-pub struct Segment {
+pub struct LazyBytes {
     pub bytes: Bytes,
     pub completion: bool,
 }
 
-pub struct SegmentStream {
+pub struct LazyBytesStream {
     processed_bytes: usize,
-    segment: Arc<RwLock<Segment>>,
+    segment: Arc<RwLock<LazyBytes>>,
 }
 
-impl SegmentStream {
-    pub fn new(segment: Arc<RwLock<Segment>>) -> SegmentStream {
-        SegmentStream {
+impl LazyBytesStream {
+    pub fn new(segment: Arc<RwLock<LazyBytes>>) -> LazyBytesStream {
+        LazyBytesStream {
             processed_bytes: 0,
             segment: segment,
         }
     }
 }
 
-impl From<Bytes> for SegmentStream {
+impl From<Bytes> for LazyBytesStream {
     fn from(bytes: Bytes) -> Self {
-        SegmentStream {
+        LazyBytesStream {
             processed_bytes: 0,
-            segment: Arc::new(RwLock::new(Segment {
+            segment: Arc::new(RwLock::new(LazyBytes {
                 bytes: bytes,
                 completion: true,
             })),
@@ -37,11 +37,11 @@ impl From<Bytes> for SegmentStream {
     }
 }
 
-impl From<String> for SegmentStream {
+impl From<String> for LazyBytesStream {
     fn from(string: String) -> Self {
-        SegmentStream {
+        LazyBytesStream {
             processed_bytes: 0,
-            segment: Arc::new(RwLock::new(Segment {
+            segment: Arc::new(RwLock::new(LazyBytes {
                 bytes: Bytes::from(string),
                 completion: true,
             })),
@@ -49,11 +49,11 @@ impl From<String> for SegmentStream {
     }
 }
 
-impl From<Vec<u8>> for SegmentStream {
+impl From<Vec<u8>> for LazyBytesStream {
     fn from(vec: Vec<u8>) -> Self {
-        SegmentStream {
+        LazyBytesStream {
             processed_bytes: 0,
-            segment: Arc::new(RwLock::new(Segment {
+            segment: Arc::new(RwLock::new(LazyBytes {
                 bytes: Bytes::from(vec),
                 completion: true,
             })),
@@ -61,7 +61,7 @@ impl From<Vec<u8>> for SegmentStream {
     }
 }
 
-impl Stream for SegmentStream {
+impl Stream for LazyBytesStream {
     type Item = hyper::Chunk;
     type Error = hyper::Error;
 

@@ -13,7 +13,7 @@ mod service;
 mod hls;
 mod camcoder;
 mod mpegts;
-mod segment;
+mod lazybytes;
 
 use hyper::server::Http;
 use std::sync::Arc;

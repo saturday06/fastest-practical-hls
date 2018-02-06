@@ -12,6 +12,7 @@ use std::os::raw::{c_int, c_void};
 use openh264_sys::*;
 use std::slice::from_raw_parts;
 use mpegts::MpegTs;
+use lazybytes::LazyBytes;
 
 pub struct Camcorder {
     hls: Arc<RwLock<Hls>>,
@@ -331,7 +332,7 @@ impl Camcorder {
         };
         {
             let mut hls = self.hls.write().expect("Failed to lock hls segments");
-            hls.add_new_segment(self.ts_duration_ms, segment);
+            hls.add_new_segment(self.ts_duration_ms, Arc::new(RwLock::new(LazyBytes {bytes: segment, completion: true})));
         }
         self.h264.clear();
         /*

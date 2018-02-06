@@ -1,11 +1,12 @@
 use std::sync::{Arc, RwLock};
 use std::collections::VecDeque;
 use bytes::Bytes;
+use lazybytes::LazyBytes;
 
 pub struct Segment {
     index: u64,
     duration_ms: u64,
-    bytes: Bytes,
+    lazy_bytes: Arc<RwLock<LazyBytes>>,
 }
 
 pub struct Hls {
@@ -23,11 +24,11 @@ impl Hls {
         Arc::new(RwLock::new(hls))
     }
 
-    pub fn add_new_segment(&mut self, duration_ms: u64, bytes: Bytes) {
+    pub fn add_new_segment(&mut self, duration_ms: u64, lazy_bytes: Arc<RwLock<LazyBytes>>) {
         self.last_index += 1;
         self.segments.push_back(Segment {
             index: self.last_index,
-            bytes: bytes,
+            lazy_bytes: lazy_bytes,
             duration_ms: duration_ms,
         });
         while self.segments.len() > 10 {
@@ -64,10 +65,10 @@ impl Hls {
         playlist
     }
 
-    pub fn read_segment(&self, index: u64) -> Option<Bytes> {
+    pub fn read_segment(&self, index: u64) -> Option<Arc<RwLock<LazyBytes>>> {
         self.segments
             .iter()
             .find(|segment| segment.index == index)
-            .map(|segment| segment.bytes.clone())
+            .map(|segment| segment.lazy_bytes.clone())
     }
 }

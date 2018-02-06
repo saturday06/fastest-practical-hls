@@ -13,7 +13,7 @@ use std::fs::{canonicalize, File};
 use std::io::copy;
 use std::thread;
 use std::time;
-use segment::SegmentStream;
+use lazybytes::LazyBytesStream;
 use futures::Sink;
 use futures::executor::spawn;
 use futures::stream::Stream;
@@ -37,7 +37,7 @@ impl AutomaticCactus {
 impl Service for AutomaticCactus {
     type Request = Request;
     type Error = hyper::Error;
-    type Response = Response<SegmentStream>;
+    type Response = Response<LazyBytesStream>;
     type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, req: Request) -> Self::Future {
@@ -57,8 +57,7 @@ impl Service for AutomaticCactus {
                         hls.read_segment(segment_index)
                     } {
                         Some(segment) => Response::new()
-                            .with_header(ContentLength(segment.len() as u64))
-                            .with_body(SegmentStream::from(segment)),
+                            .with_body(LazyBytesStream::new(segment)),
                         _ => Response::new().with_status(StatusCode::NotFound),
                     },
                     Err(err) => {
@@ -66,7 +65,7 @@ impl Service for AutomaticCactus {
                         Response::new()
                             .with_header(ContentLength(body.len() as u64))
                             .with_status(StatusCode::BadRequest)
-                            .with_body(SegmentStream::from(body))
+                            .with_body(LazyBytesStream::from(body))
                     }
                 }
             }
@@ -86,7 +85,7 @@ impl Service for AutomaticCactus {
                 Response::new()
                     .with_header(ContentLength(playlist.len() as u64))
                     .with_header(ContentType(content_type))
-                    .with_body(SegmentStream::from(playlist))
+                    .with_body(LazyBytesStream::from(playlist))
             }
             (&Get, "/") => {
                 Response::new()
@@ -107,7 +106,7 @@ impl Service for AutomaticCactus {
                         match copy(&mut file, &mut buf) {
                             Ok(_) => Response::new()
                                 .with_header(ContentLength(buf.len() as u64))
-                                .with_body(SegmentStream::from(buf)),
+                                .with_body(LazyBytesStream::from(buf)),
                             Err(_) => Response::new().with_status(StatusCode::NotFound),
                         }
                     }
