@@ -76,7 +76,12 @@ impl MpegTs {
         };
         let output_file_name =
             CString::new("output.ts").expect("Oops! can't parse output file name");
-        let mut r = avformat_alloc_output_context2(&mut obj.output_format, null_mut(), null_mut(), output_file_name.as_ptr());
+        let mut r = avformat_alloc_output_context2(
+            &mut obj.output_format,
+            null_mut(),
+            null_mut(),
+            output_file_name.as_ptr(),
+        );
         if r < 0 {
             panic!("Failed to alloc output context: {}", r)
         }
@@ -124,7 +129,13 @@ impl MpegTs {
         obj
     }
 
-    pub unsafe fn write(&mut self, h264: &mut Vec<u8>, start_ms: u64, frame_duration_ms: u64, key: bool) {
+    pub unsafe fn write(
+        &mut self,
+        h264: &mut Vec<u8>,
+        start_ms: u64,
+        frame_duration_ms: u64,
+        key: bool,
+    ) {
         let mut packet = default_av_packet();
 
         if key {
@@ -135,7 +146,7 @@ impl MpegTs {
         let num = time_base.num as i64;
         packet.pts = start_ms as i64 * den / (num * 1000);
         packet.dts = packet.pts;
-        packet.duration = frame_duration_ms as i64 * den / (num  * 1000);
+        packet.duration = frame_duration_ms as i64 * den / (num * 1000);
         packet.pos = -1;
         packet.stream_index = 0;
         packet.data = h264.as_mut_ptr();

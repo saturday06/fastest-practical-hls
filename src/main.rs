@@ -2,7 +2,6 @@ extern crate bytes;
 extern crate chrono;
 extern crate ffmpeg_sys;
 extern crate futures;
-extern crate futures_cpupool;
 extern crate hyper;
 extern crate libc;
 extern crate magick_rust;
@@ -14,7 +13,6 @@ mod hls;
 mod camcoder;
 mod mpegts;
 mod lazybytes;
-mod realtimeoutput;
 
 use hyper::server::Http;
 use std::sync::Arc;
@@ -24,7 +22,6 @@ use tokio_core::reactor::{Core, Interval};
 use std::time::Duration;
 use futures::Stream;
 use ffmpeg_sys::av_register_all;
-use futures_cpupool::CpuPool;
 
 fn main() {
     std::process::exit({
@@ -65,13 +62,9 @@ fn main() {
         //let static_path = Path::new(file!()).parent().map(|path|
         //    path.parnet().map(|path| path.join("www"))
         //).expect("todo: flatten").expect("what's");
-        let cpu_pool = CpuPool::new(4);
         let server = Http::new()
             .bind(&addr, move || {
-                Ok(service::AutomaticCactus::new(
-                    server_hls.clone(),
-                    cpu_pool.clone(),
-                ))
+                Ok(service::AutomaticCactus::new(server_hls.clone()))
             })
             .expect(&format!("Failed to bind {:?}", addr));
         server

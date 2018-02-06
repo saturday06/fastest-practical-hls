@@ -1,8 +1,6 @@
 use futures::{Async, Poll};
 use futures::stream::Stream;
-use std::io;
 use hyper;
-use futures::sync::mpsc;
 use std::sync::{Arc, RwLock};
 use bytes::Bytes;
 

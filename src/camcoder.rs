@@ -329,7 +329,14 @@ impl Camcorder {
             }
         }
 
-        unsafe { self.mpeg_ts.write(&mut self.h264, self.current_ms - self.frame_duration_ms, self.frame_duration_ms, force_intra_frame) };
+        unsafe {
+            self.mpeg_ts.write(
+                &mut self.h264,
+                self.current_ms - self.frame_duration_ms,
+                self.frame_duration_ms,
+                force_intra_frame,
+            )
+        };
         self.h264.clear();
 
         if self.current_ms % self.ts_duration_ms != 0 {
@@ -338,10 +345,16 @@ impl Camcorder {
 
         let segment = unsafe { self.mpeg_ts.flush() };
         let mut hls = self.hls.write().expect("Failed to lock hls segments");
-        hls.add_new_segment(self.ts_duration_ms, segment);
+        hls.add_new_segment(
+            self.ts_duration_ms,
+            Arc::new(RwLock::new(LazyBytes {
+                bytes: segment,
+                completion: true,
+            })),
+        );
 
         self.mpeg_ts = unsafe { MpegTs::new(self.width, self.height) };
-/*
+        /*
         let mut file = OpenOptions::new()
             .create(true)
             .append(true)
