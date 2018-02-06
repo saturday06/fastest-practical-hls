@@ -27,8 +27,8 @@ impl Hls {
         self.last_index += 1;
         self.segments.push_back(Segment {
             index: self.last_index,
-            lazy_bytes: lazy_bytes,
-            duration_ms: duration_ms,
+            lazy_bytes,
+            duration_ms,
         });
         while self.segments.len() > 10 {
             self.segments.pop_front();

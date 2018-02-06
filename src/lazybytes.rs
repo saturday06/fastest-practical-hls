@@ -3,6 +3,7 @@ use futures::stream::Stream;
 use hyper;
 use std::sync::{Arc, RwLock};
 use bytes::Bytes;
+use std::sync::TryLockError;
 
 pub struct LazyBytes {
     pub bytes: Bytes,
@@ -18,43 +19,7 @@ impl LazyBytesStream {
     pub fn new(segment: Arc<RwLock<LazyBytes>>) -> LazyBytesStream {
         LazyBytesStream {
             processed_bytes: 0,
-            segment: segment,
-        }
-    }
-}
-
-impl From<Bytes> for LazyBytesStream {
-    fn from(bytes: Bytes) -> Self {
-        LazyBytesStream {
-            processed_bytes: 0,
-            segment: Arc::new(RwLock::new(LazyBytes {
-                bytes: bytes,
-                completion: true,
-            })),
-        }
-    }
-}
-
-impl From<String> for LazyBytesStream {
-    fn from(string: String) -> Self {
-        LazyBytesStream {
-            processed_bytes: 0,
-            segment: Arc::new(RwLock::new(LazyBytes {
-                bytes: Bytes::from(string),
-                completion: true,
-            })),
-        }
-    }
-}
-
-impl From<Vec<u8>> for LazyBytesStream {
-    fn from(vec: Vec<u8>) -> Self {
-        LazyBytesStream {
-            processed_bytes: 0,
-            segment: Arc::new(RwLock::new(LazyBytes {
-                bytes: Bytes::from(vec),
-                completion: true,
-            })),
+            segment,
         }
     }
 }
@@ -64,7 +29,13 @@ impl Stream for LazyBytesStream {
     type Error = hyper::Error;
 
     fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        let segment = self.segment.read().expect("Failed to lock segment bytes");
+        let segment = match self.segment.try_read() {
+            Ok(segment) => segment,
+            Err(TryLockError::WouldBlock) => return Ok(Async::Ready(Some(hyper::Chunk::from("")))),
+            Err(TryLockError::Poisoned(err)) => {
+                panic!("Failed to try lock segment for read: {:?}", err)
+            }
+        };
         let bytes = &segment.bytes;
         if bytes.len() == self.processed_bytes {
             if segment.completion {

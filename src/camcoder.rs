@@ -128,8 +128,7 @@ impl Camcorder {
         let bitrate = 4000000;
         param.iUsageType = CAMERA_VIDEO_REAL_TIME;
         param.fMaxFrameRate = fps;
-        param.iMaxBitrate = UNSPECIFIED_BIT_RATE as i32; // TODO:
-                                                         // param.iTemporalLayerNum = 3; // layer number at temporal level
+        param.iMaxBitrate = UNSPECIFIED_BIT_RATE as i32;
         param.iSpatialLayerNum = 1; // layer number at spatial level
         param.bSimulcastAVC = true;
         param.iMultipleThreadIdc = 4;
@@ -184,24 +183,24 @@ impl Camcorder {
         }
 
         Camcorder {
-            magick_wand: magick_wand,
-            text_drawing: text_drawing,
-            background_drawing: background_drawing,
-            magick_image_pixels: magick_image_pixels,
-            hls: hls,
-            width: width,
-            height: height,
-            y_pixels: y_pixels,
-            u_pixels: u_pixels,
-            v_pixels: v_pixels,
-            y_stride: y_stride,
-            u_stride: u_stride,
-            v_stride: v_stride,
-            sws_context: sws_context,
-            svc_encoder: svc_encoder,
-            frame_duration_ms: frame_duration_ms,
+            magick_wand,
+            text_drawing,
+            background_drawing,
+            magick_image_pixels,
+            hls,
+            width,
+            height,
+            y_pixels,
+            u_pixels,
+            v_pixels,
+            y_stride,
+            u_stride,
+            v_stride,
+            sws_context,
+            svc_encoder,
+            frame_duration_ms,
             current_ms: 0,
-            ts_duration_ms: ts_duration_ms,
+            ts_duration_ms,
             mpeg_ts: unsafe { MpegTs::new(width, height, lazy_bytes) },
             h264: Vec::new(),
         }

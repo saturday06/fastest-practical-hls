@@ -11,9 +11,10 @@ use std::fs::{canonicalize, File};
 use std::error::Error;
 use std::io::copy;
 use lazybytes::LazyBytesStream;
-use tokio_timer::Timer;
-use std::time::Duration;
 use futures::Stream;
+use futures::stream::once;
+
+type Body = Box<Stream<Item = hyper::Chunk, Error = hyper::Error>>;
 
 pub struct AutomaticCactus {
     hls: Arc<RwLock<Hls>>,
@@ -21,14 +22,14 @@ pub struct AutomaticCactus {
 
 impl AutomaticCactus {
     pub fn new(hls: Arc<RwLock<Hls>>) -> AutomaticCactus {
-        AutomaticCactus { hls: hls }
+        AutomaticCactus { hls }
     }
 }
 
 impl Service for AutomaticCactus {
     type Request = Request;
+    type Response = Response<Body>;
     type Error = hyper::Error;
-    type Response = Response<Box<Stream<Item = hyper::Chunk, Error = Self::Error>>>;
     type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, req: Request) -> Self::Future {
@@ -48,11 +49,7 @@ impl Service for AutomaticCactus {
                         hls.read_segment(segment_index)
                     } {
                         Some(segment) => {
-                            let timer = Timer::default();
-                            let interval = timer.interval(Duration::from_millis(50)).map_err(|_| {
-                                hyper::Error::Incomplete
-                            });
-                            let body: Box<Stream<Item = hyper::Chunk, Error = Self::Error>> = Box::new(LazyBytesStream::new(segment).zip(interval).map(|tuple| { tuple.0 }));
+                            let body: Body = Box::new(LazyBytesStream::new(segment));
                             Response::new().with_body(body)
                         }
                         _ => Response::new().with_status(StatusCode::NotFound),
@@ -79,7 +76,7 @@ impl Service for AutomaticCactus {
                     .parse()
                     .expect(&format!("Failed to parse {} as mime", content_type_str));
                 let playlist_len = playlist.len();
-                let body: Box<Stream<Item = hyper::Chunk, Error = Self::Error>> = Box::new(futures::stream::once(Ok(hyper::Chunk::from(playlist))));
+                let body: Body = Box::new(once(Ok(hyper::Chunk::from(playlist))));
                 Response::new()
                     .with_header(ContentLength(playlist_len as u64))
                     .with_header(ContentType(content_type))
@@ -104,7 +101,7 @@ impl Service for AutomaticCactus {
                         match copy(&mut file, &mut buf) {
                             Ok(_) => {
                                 let buf_len = buf.len();
-                                let body: Box<Stream<Item = hyper::Chunk, Error = Self::Error>> = Box::new(futures::stream::once(Ok(hyper::Chunk::from(buf))));
+                                let body: Body = Box::new(once(Ok(hyper::Chunk::from(buf))));
                                 Response::new()
                                     .with_header(ContentLength(buf_len as u64))
                                     .with_body(body)

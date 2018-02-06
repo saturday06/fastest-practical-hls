@@ -60,9 +60,6 @@ fn main() {
         let addr = addr_str
             .parse()
             .expect(&format!("Failed to parse address {}", addr_str));
-        //let static_path = Path::new(file!()).parent().map(|path|
-        //    path.parnet().map(|path| path.join("www"))
-        //).expect("todo: flatten").expect("what's");
         let server = Http::new()
             .bind(&addr, move || {
                 Ok(service::AutomaticCactus::new(server_hls.clone()))
