@@ -11,6 +11,9 @@ use std::fs::{canonicalize, File};
 use std::error::Error;
 use std::io::copy;
 use lazybytes::LazyBytesStream;
+use tokio_timer::Timer;
+use std::time::Duration;
+use futures::Stream;
 
 pub struct AutomaticCactus {
     hls: Arc<RwLock<Hls>>,
@@ -25,11 +28,11 @@ impl AutomaticCactus {
 impl Service for AutomaticCactus {
     type Request = Request;
     type Error = hyper::Error;
-    type Response = Response<LazyBytesStream>;
+    type Response = Response<Box<Stream<Item = hyper::Chunk, Error = Self::Error>>>;
     type Future = Box<Future<Item = Self::Response, Error = Self::Error>>;
 
     fn call(&self, req: Request) -> Self::Future {
-        const SEGMENT_PREFIX: &str = "/segment/";
+        const SEGMENT_PREFIX: &str = "/segment";
         Box::new(futures::future::ok(match (req.method(), req.path()) {
             (&Get, path) if path.starts_with(SEGMENT_PREFIX) => {
                 match path.replace(SEGMENT_PREFIX, "")
@@ -44,8 +47,14 @@ impl Service for AutomaticCactus {
                         let hls = &*lock;
                         hls.read_segment(segment_index)
                     } {
-                        Some(segment) => Response::new()
-                            .with_body(LazyBytesStream::new(segment)),
+                        Some(segment) => {
+                            let timer = Timer::default();
+                            let interval = timer.interval(Duration::from_millis(50)).map_err(|_| {
+                                hyper::Error::Incomplete
+                            });
+                            let body: Box<Stream<Item = hyper::Chunk, Error = Self::Error>> = Box::new(LazyBytesStream::new(segment).zip(interval).map(|tuple| { tuple.0 }));
+                            Response::new().with_body(body)
+                        }
                         _ => Response::new().with_status(StatusCode::NotFound),
                     },
                     Err(err) => {
@@ -53,7 +62,6 @@ impl Service for AutomaticCactus {
                         Response::new()
                             .with_header(ContentLength(body.len() as u64))
                             .with_status(StatusCode::BadRequest)
-                            .with_body(LazyBytesStream::from(body))
                     }
                 }
             }
@@ -70,10 +78,12 @@ impl Service for AutomaticCactus {
                 let content_type = content_type_str
                     .parse()
                     .expect(&format!("Failed to parse {} as mime", content_type_str));
+                let playlist_len = playlist.len();
+                let body: Box<Stream<Item = hyper::Chunk, Error = Self::Error>> = Box::new(futures::stream::once(Ok(hyper::Chunk::from(playlist))));
                 Response::new()
-                    .with_header(ContentLength(playlist.len() as u64))
+                    .with_header(ContentLength(playlist_len as u64))
                     .with_header(ContentType(content_type))
-                    .with_body(LazyBytesStream::from(playlist))
+                    .with_body(body)
             }
             (&Get, "/") => {
                 Response::new()
@@ -92,9 +102,13 @@ impl Service for AutomaticCactus {
                     Ok(mut file) => {
                         let mut buf: Vec<u8> = Vec::new();
                         match copy(&mut file, &mut buf) {
-                            Ok(_) => Response::new()
-                                .with_header(ContentLength(buf.len() as u64))
-                                .with_body(LazyBytesStream::from(buf)),
+                            Ok(_) => {
+                                let buf_len = buf.len();
+                                let body: Box<Stream<Item = hyper::Chunk, Error = Self::Error>> = Box::new(futures::stream::once(Ok(hyper::Chunk::from(buf))));
+                                Response::new()
+                                    .with_header(ContentLength(buf_len as u64))
+                                    .with_body(body)
+                            },
                             Err(_) => Response::new().with_status(StatusCode::NotFound),
                         }
                     }

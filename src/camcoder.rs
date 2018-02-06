@@ -13,6 +13,7 @@ use openh264_sys::*;
 use std::slice::from_raw_parts;
 use mpegts::MpegTs;
 use lazybytes::LazyBytes;
+use bytes::Bytes;
 
 pub struct Camcorder {
     hls: Arc<RwLock<Hls>>,
@@ -46,7 +47,7 @@ impl Camcorder {
             .set_color("white")
             .expect("Failed to set text fill color");
         let mut text_drawing = DrawingWand::new();
-        text_drawing.set_font_size(14.0);
+        text_drawing.set_font_size(64.0);
         text_drawing.set_gravity(GravityType::CenterGravity);
         text_drawing.set_fill_color(&text_fill_color);
         let mut background_color = PixelWand::new();
@@ -173,6 +174,15 @@ impl Camcorder {
             panic!("SetOption: {}", r);
         }
 
+        let lazy_bytes = Arc::new(RwLock::new(LazyBytes {
+            bytes: Bytes::new(),
+            completion: false,
+        }));
+        {
+            let mut h = hls.write().expect("Failed to lock hls segments");
+            h.add_new_segment(ts_duration_ms, lazy_bytes.clone());
+        }
+
         Camcorder {
             magick_wand: magick_wand,
             text_drawing: text_drawing,
@@ -192,7 +202,7 @@ impl Camcorder {
             frame_duration_ms: frame_duration_ms,
             current_ms: 0,
             ts_duration_ms: ts_duration_ms,
-            mpeg_ts: unsafe { MpegTs::new(width, height) },
+            mpeg_ts: unsafe { MpegTs::new(width, height, lazy_bytes) },
             h264: Vec::new(),
         }
     }
@@ -343,17 +353,18 @@ impl Camcorder {
             return true;
         }
 
-        let segment = unsafe { self.mpeg_ts.flush() };
-        let mut hls = self.hls.write().expect("Failed to lock hls segments");
-        hls.add_new_segment(
-            self.ts_duration_ms,
-            Arc::new(RwLock::new(LazyBytes {
-                bytes: segment,
-                completion: true,
-            })),
-        );
+        unsafe { self.mpeg_ts.flush() };
 
-        self.mpeg_ts = unsafe { MpegTs::new(self.width, self.height) };
+        let lazy_bytes = Arc::new(RwLock::new(LazyBytes {
+            bytes: Bytes::new(),
+            completion: false,
+        }));
+        {
+            let mut hls = self.hls.write().expect("Failed to lock hls segments");
+            hls.add_new_segment(self.ts_duration_ms, lazy_bytes.clone());
+        }
+
+        self.mpeg_ts = unsafe { MpegTs::new(self.width, self.height, lazy_bytes.clone()) };
         /*
         let mut file = OpenOptions::new()
             .create(true)

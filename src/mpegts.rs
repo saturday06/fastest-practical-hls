@@ -1,10 +1,11 @@
-use bytes::Bytes;
 use std::os::raw::c_int;
 use std::slice::from_raw_parts;
 use std::ptr::null_mut;
 use ffmpeg_sys::*;
 use libc;
 use std::ffi::CString;
+use lazybytes::LazyBytes;
+use std::sync::{Arc, RwLock};
 
 pub struct MpegTs {
     output_format: *mut AVFormatContext,
@@ -32,7 +33,7 @@ impl Drop for MpegTs {
 }
 
 struct Output {
-    data: Bytes,
+    data: Arc<RwLock<LazyBytes>>,
 }
 
 unsafe extern "C" fn write_output(
@@ -41,9 +42,11 @@ unsafe extern "C" fn write_output(
     input_buf_size: c_int,
 ) -> c_int {
     let output = &mut *(opaque as *mut Output);
-    output
-        .data
-        .extend_from_slice(from_raw_parts(input_buf, input_buf_size as usize));
+    {
+        let mut data = output.data.write().expect("Oops! w");
+        data.bytes
+            .extend_from_slice(from_raw_parts(input_buf, input_buf_size as usize));
+    }
     input_buf_size
 }
 
@@ -65,13 +68,13 @@ fn default_av_packet() -> AVPacket {
 }
 
 impl MpegTs {
-    pub unsafe fn new(width: usize, height: usize) -> MpegTs {
+    pub unsafe fn new(width: usize, height: usize, lazy_bytes: Arc<RwLock<LazyBytes>>) -> MpegTs {
         const AVIO_CTX_BUFFER_SIZE: usize = 8192;
 
         let mut obj = MpegTs {
             output_format: null_mut(),
             output_io: null_mut(),
-            output: Box::new(Output { data: Bytes::new() }),
+            output: Box::new(Output { data: lazy_bytes }),
             output_video_stream: null_mut(),
         };
         let output_file_name =
@@ -157,8 +160,14 @@ impl MpegTs {
         }
     }
 
-    pub unsafe fn flush(&mut self) -> Bytes {
+    pub unsafe fn flush(&mut self) {
         av_write_trailer(self.output_format);
-        self.output.data.clone()
+        {
+            let mut data = self.output
+                .data
+                .write()
+                .expect("Oops! write lock lazy bytes");
+            data.completion = true;
+        }
     }
 }

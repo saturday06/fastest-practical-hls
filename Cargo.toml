@@ -13,6 +13,7 @@ magick_rust = "0.7"
 chrono = "0.4"
 libc = "0.2"
 tokio-core = "0.1"
+tokio-timer = "0.1"
 
 [dependencies.ffmpeg-sys]
 version = "3"

@@ -9911,7 +9911,7 @@ var level_controller_LevelController = function (_EventHandler) {
         // decrement reloadInterval with level loading delay
         reloadInterval -= performance.now() - data.stats.trequest;
         // in any case, don't reload more than every second
-        reloadInterval = Math.max(1000, Math.round(reloadInterval));
+        reloadInterval = Math.max(350, Math.round(reloadInterval));
         logger["b" /* logger */].log('live playlist, reload in ' + reloadInterval + ' ms');
         this.timer = setTimeout(function () {
           return _this3.loadLevel();

@@ -70,7 +70,8 @@ impl Stream for LazyBytesStream {
             if segment.completion {
                 Ok(Async::Ready(None))
             } else {
-                Ok(Async::NotReady)
+                // Ok(Async::NotReady)
+                Ok(Async::Ready(Some(hyper::Chunk::from(""))))
             }
         } else if bytes.len() > self.processed_bytes {
             let ready = Async::Ready(Some(hyper::Chunk::from(

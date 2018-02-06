@@ -7,6 +7,7 @@ extern crate libc;
 extern crate magick_rust;
 extern crate openh264_sys;
 extern crate tokio_core;
+extern crate tokio_timer;
 
 mod service;
 mod hls;
@@ -34,7 +35,7 @@ fn main() {
         let camcoder_thread = std::thread::spawn(move || {
             magick_wand_genesis();
             unsafe { av_register_all() };
-            let ts_duration_ms = 3000;
+            let ts_duration_ms = 350;
             let tick_ms = 50; // 20fps
             let mut camcoder =
                 camcoder::Camcorder::new(camcoder_hls.clone(), tick_ms, ts_duration_ms);
