@@ -62,7 +62,7 @@ fn main() {
             .expect(&format!("Failed to parse address {}", addr_str));
         let server = Http::new()
             .bind(&addr, move || {
-                Ok(service::AutomaticCactus::new(server_hls.clone()))
+                Ok(service::HlsService::new(server_hls.clone()))
             })
             .expect(&format!("Failed to bind {:?}", addr));
         server

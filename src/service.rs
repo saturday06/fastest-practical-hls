@@ -16,17 +16,17 @@ use futures::stream::once;
 
 type Body = Box<Stream<Item = hyper::Chunk, Error = hyper::Error>>;
 
-pub struct AutomaticCactus {
+pub struct HlsService {
     hls: Arc<RwLock<Hls>>,
 }
 
-impl AutomaticCactus {
-    pub fn new(hls: Arc<RwLock<Hls>>) -> AutomaticCactus {
-        AutomaticCactus { hls }
+impl HlsService {
+    pub fn new(hls: Arc<RwLock<Hls>>) -> HlsService {
+        HlsService { hls }
     }
 }
 
-impl Service for AutomaticCactus {
+impl Service for HlsService {
     type Request = Request;
     type Response = Response<Body>;
     type Error = hyper::Error;
