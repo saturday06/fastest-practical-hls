@@ -1,3 +1,3 @@
-# fastest-practical-hls
+# FASTEST PRACTICAL HLS
 
-FASTEST PRACTICAL HLS
+最速のHLS配信サーバーを目指します。Macで動かすとレスポンス返ってこないことがあるのでデッドロックありそう。
