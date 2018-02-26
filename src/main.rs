@@ -56,7 +56,7 @@ fn main() {
             })).expect("Failed to run interval");
         });
 
-        let addr_str = "127.0.0.1:3001";
+        let addr_str = "0.0.0.0:3001";
         let addr = addr_str
             .parse()
             .expect(&format!("Failed to parse address {}", addr_str));
