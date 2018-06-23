@@ -5,15 +5,17 @@ authors = ["Isamu Mogi <isamu@leafytree.jp>"]
 build = "build.rs"
 
 [dependencies]
-bytes = "0.4"
-hyper = "0.11"
-futures = "0.1"
+bytes = "0"
+hyper = "0"
+futures = "0"
 openh264-sys = "1"
-magick_rust = "0.7"
-chrono = "0.4"
-libc = "0.2"
-tokio-core = "0.1"
-tokio-timer = "0.1"
+magick_rust = "0"
+chrono = "0"
+libc = "0"
+tokio-core = "0"
+tokio-timer = "0"
 
 [dependencies.ffmpeg-sys]
 version = "3"
+default-features = false
+features = [ "avformat" ]
