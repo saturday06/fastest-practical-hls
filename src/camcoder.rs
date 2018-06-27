@@ -14,6 +14,7 @@ use std::slice::from_raw_parts;
 use mpegts::MpegTs;
 use lazybytes::LazyBytes;
 use bytes::Bytes;
+use std::marker::Send;
 
 pub struct Camcorder {
     hls: Arc<RwLock<Hls>>,
@@ -36,6 +37,9 @@ pub struct Camcorder {
     ts_duration_ms: u64,
     mpeg_ts: MpegTs,
     h264: Vec<u8>,
+}
+
+unsafe impl Send for Camcorder {
 }
 
 impl Camcorder {

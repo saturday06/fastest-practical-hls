@@ -25,6 +25,8 @@ use futures::Stream;
 use ffmpeg_sys::av_register_all;
 use std::cell::RefCell;
 use std::sync::{Arc, Mutex};
+use std::os::raw::c_void;
+use std::ptr::null_mut;
 
 fn main() {
     std::process::exit({
@@ -40,7 +42,7 @@ fn main() {
             let ts_duration_ms = 300;
             let tick_ms = 100; // 10fps
             let mut camcoder =
-                Mutex::new(RefCell::new(camcoder::Camcorder::new(camcoder_hls.clone(), tick_ms, ts_duration_ms)));
+                Arc::new(Mutex::new(RefCell::new(camcoder::Camcorder::new(camcoder_hls.clone(), tick_ms, ts_duration_ms))));
             let mut core = Core::new().expect("Failed to allocate tokio_core::reactor::Core");
             let handle = core.handle();
             let interval_duration = Duration::from_millis(tick_ms);
@@ -48,6 +50,13 @@ fn main() {
                 "Failed to allocate interval: {:?}",
                 interval_duration
             ));
+
+            let mut callback_camcoder = camcoder.clone();
+            std::thread::spawn(move || {
+                unsafe {
+                    webrtcelevator::start_webrtc_elevator(&mut callback_camcoder as *mut Arc<_> as *mut c_void, None);
+                }
+            });
 
             core.run(interval.for_each(|_| {
                 let locked = camcoder.lock().expect("lock");
