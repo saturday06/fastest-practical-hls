@@ -84,7 +84,7 @@ impl Service for HlsService {
             }
             (&Get, "/") => {
                 Response::new()
-                    .with_header(Location::new("/index.html?src=index.m3u8&enableStreaming=true&autoRecoverError=true&enableWorker=true&dumpfMP4=false&levelCapping=-1&defaultAudioCodec=undefined&widevineLicenseURL="))
+                    .with_header(Location::new("/index.html?src=%2Findex.m3u8&demoConfig=eyJlbmFibGVTdHJlYW1pbmciOnRydWUsImF1dG9SZWNvdmVyRXJyb3IiOnRydWUsImVuYWJsZVdvcmtlciI6dHJ1ZSwiZHVtcGZNUDQiOmZhbHNlLCJsZXZlbENhcHBpbmciOi0xLCJsaW1pdE1ldHJpY3MiOi0xLCJ3aWRldmluZUxpY2Vuc2VVcmwiOiIifQ=="))
                     .with_status(StatusCode::SeeOther)
             }
             (&Get, file_path_str) => {

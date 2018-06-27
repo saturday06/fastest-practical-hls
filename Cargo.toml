@@ -17,3 +17,6 @@ tokio-timer = "0.1"
 
 [dependencies.ffmpeg-sys]
 version = "3"
+
+[build-dependencies]
+bindgen = "0.32.3"

@@ -14,15 +14,17 @@ mod hls;
 mod camcoder;
 mod mpegts;
 mod lazybytes;
+mod webrtcelevator;
 
 use hyper::server::Http;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use magick_rust::magick_wand_genesis;
 use tokio_core::reactor::{Core, Interval};
 use std::time::Duration;
 use futures::Stream;
 use ffmpeg_sys::av_register_all;
+use std::cell::RefCell;
+use std::sync::{Arc, Mutex};
 
 fn main() {
     std::process::exit({
@@ -35,10 +37,10 @@ fn main() {
         let camcoder_thread = std::thread::spawn(move || {
             magick_wand_genesis();
             unsafe { av_register_all() };
-            let ts_duration_ms = 350;
-            let tick_ms = 50; // 20fps
+            let ts_duration_ms = 300;
+            let tick_ms = 100; // 10fps
             let mut camcoder =
-                camcoder::Camcorder::new(camcoder_hls.clone(), tick_ms, ts_duration_ms);
+                Mutex::new(RefCell::new(camcoder::Camcorder::new(camcoder_hls.clone(), tick_ms, ts_duration_ms)));
             let mut core = Core::new().expect("Failed to allocate tokio_core::reactor::Core");
             let handle = core.handle();
             let interval_duration = Duration::from_millis(tick_ms);
@@ -46,8 +48,10 @@ fn main() {
                 "Failed to allocate interval: {:?}",
                 interval_duration
             ));
+
             core.run(interval.for_each(|_| {
-                if camcoder.run() && !camcoder_thread_stop_reader.as_ref().load(Ordering::Relaxed) {
+                let locked = camcoder.lock().expect("lock");
+                if locked.borrow_mut().run() && !camcoder_thread_stop_reader.as_ref().load(Ordering::Relaxed) {
                     futures::future::ok(())
                 } else {
                     futures::future::ok(())
