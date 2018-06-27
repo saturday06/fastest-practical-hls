@@ -1,6 +1,7 @@
 use futures;
-use hyper;
-use futures::future::Future;
+use hyper::{Body, Request, Response, Server};
+use hyper::rt::Future;
+use hyper::service::service_fn_ok;
 use hyper::{Get, StatusCode};
 use hyper::header::{ContentLength, ContentType, Location};
 use hyper::server::{Request, Response, Service};
