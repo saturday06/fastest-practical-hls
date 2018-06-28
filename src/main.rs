@@ -54,7 +54,7 @@ fn main() {
             let mut callback_camcoder = camcoder.clone();
             std::thread::spawn(move || {
                 unsafe {
-                    webrtcelevator::start_webrtc_elevator(&mut callback_camcoder as *mut Arc<_> as *mut c_void, None);
+                    webrtcelevator::start_webrtc_elevator(&mut callback_camcoder as *mut Arc<_> as *mut c_void, Some(camcoder::frame_callback));
                 }
             });
 

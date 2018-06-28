@@ -1,5 +1,5 @@
 use hls::Hls;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, Mutex};
 use std::ffi::CString;
 use magick_rust::{DrawingWand, MagickWand, PixelWand};
 use magick_rust::bindings::{ColorspaceType, DrawRectangle, GravityType, MagickBooleanType,
@@ -15,6 +15,8 @@ use mpegts::MpegTs;
 use lazybytes::LazyBytes;
 use bytes::Bytes;
 use std::marker::Send;
+use webrtcelevator;
+use std::cell::RefCell;
 
 pub struct Camcorder {
     hls: Arc<RwLock<Hls>>,
@@ -40,6 +42,18 @@ pub struct Camcorder {
 }
 
 unsafe impl Send for Camcorder {
+}
+
+pub unsafe extern "C" fn frame_callback(target_ptr: *mut c_void, frame_ptr: *const webrtcelevator::webrtc_elevator_video_frame) {
+    let camcoder_arc = (target_ptr as *mut Arc<Mutex<RefCell<Camcorder>>>).as_ref().expect("camcoder");
+    let frame = frame_ptr.as_ref().expect("frame ref");
+
+    println!("I'm called from C with value {}x{}", frame.width, frame.height);
+/*
+    unsafe {
+        // コールバックから受け取った値でRustObjectの中の値をアップデートする
+        (*target).a = a;
+    }*/
 }
 
 impl Camcorder {
