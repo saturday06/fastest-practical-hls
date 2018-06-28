@@ -39,6 +39,7 @@ pub struct Camcorder {
     ts_duration_ms: u64,
     mpeg_ts: MpegTs,
     h264: Vec<u8>,
+    intra_count: usize,
 }
 
 unsafe impl Send for Camcorder {
@@ -244,6 +245,7 @@ impl Camcorder {
             ts_duration_ms,
             mpeg_ts: unsafe { MpegTs::new(width, height, lazy_bytes) },
             h264: Vec::new(),
+            intra_count: 0,
         }
     }
 
@@ -328,10 +330,13 @@ impl Camcorder {
         pic.pData[2] = self.v_pixels.as_mut_ptr();
 
         if force_intra_frame {
-            let r =
-                unsafe { (**self.svc_encoder).ForceIntraFrame.unwrap()(self.svc_encoder, true) };
-            if r != 0 {
-                panic!("ForceIntraFrame: {}", r);
+            self.intra_count += 1;
+            if self.intra_count < 90 || self.intra_count % 10 == 0 {
+                let r =
+                    unsafe { (**self.svc_encoder).ForceIntraFrame.unwrap()(self.svc_encoder, true) };
+                if r != 0 {
+                    panic!("ForceIntraFrame: {}", r);
+                }
             }
         }
 
