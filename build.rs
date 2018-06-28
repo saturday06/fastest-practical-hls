@@ -32,11 +32,17 @@ fn main() {
     bindings
         .write_to_file(out_path.join("webrtcelevator.rs"))
         .expect("Couldn't write bindings!");
-
+/*
     println!("cargo:rustc-link-search=native=../elevator/libsourcey/cmake-build-debug/lib");
     println!("cargo:rustc-link-search=native=../elevator/libwebrtc/src/out/Debug/obj");
     println!("cargo:rustc-link-search=native=../elevator/libwebrtc/src/out/Debug/obj/third_party/boringssl");
     println!("cargo:rustc-link-search=native=../elevator/libwebrtc/src/out/Debug/obj/third_party/protobuf");
+*/
+    println!("cargo:rustc-link-search=native=../elevator/libsourcey/cmake-build-release/lib");
+    println!("cargo:rustc-link-search=native=../elevator/libwebrtc/src/out/Release/obj");
+    println!("cargo:rustc-link-search=native=../elevator/libwebrtc/src/out/Release/obj/third_party/boringssl");
+    println!("cargo:rustc-link-search=native=../elevator/libwebrtc/src/out/Release/obj/third_party/protobuf");
+
     for lib in [
         "webrtcelevator",
 
