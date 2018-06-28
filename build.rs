@@ -66,6 +66,7 @@ fn main() {
         "dl",
         "X11",
         "Xext",
+        "Xfixes",
     ].iter() {
         println!("cargo:rustc-link-lib=dylib={}", lib);
     }
