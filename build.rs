@@ -20,6 +20,8 @@ fn main() {
         // The input header we would like to generate
         // bindings for.
         .header("../elevator/libsourcey/src/webrtc/include/webrtcelevator.h")
+        .whitelist_type("webrtc_elevator_video_frame")
+        .whitelist_function("start_webrtc_elevator")
         // Finish the builder and generate the bindings.
         .generate()
         // Unwrap the Result and panic on failure.

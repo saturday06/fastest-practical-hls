@@ -42,7 +42,7 @@ fn main() {
             let ts_duration_ms = 300;
             let tick_ms = 100; // 10fps
             let mut camcoder =
-                Arc::new(Mutex::new(RefCell::new(camcoder::Camcorder::new(camcoder_hls.clone(), tick_ms, ts_duration_ms))));
+                Arc::new(Mutex::new(camcoder::Camcorder::new(camcoder_hls.clone(), tick_ms, ts_duration_ms)));
             let mut core = Core::new().expect("Failed to allocate tokio_core::reactor::Core");
             let handle = core.handle();
             let interval_duration = Duration::from_millis(tick_ms);
@@ -59,8 +59,8 @@ fn main() {
             });
 
             core.run(interval.for_each(|_| {
-                let locked = camcoder.lock().expect("lock");
-                if locked.borrow_mut().run() && !camcoder_thread_stop_reader.as_ref().load(Ordering::Relaxed) {
+                let mut locked = camcoder.lock().expect("lock");
+                if locked.run() && !camcoder_thread_stop_reader.as_ref().load(Ordering::Relaxed) {
                     futures::future::ok(())
                 } else {
                     futures::future::ok(())

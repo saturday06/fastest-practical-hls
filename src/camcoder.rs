@@ -7,7 +7,7 @@ use magick_rust::bindings::{ColorspaceType, DrawRectangle, GravityType, MagickBo
 use chrono::prelude::*;
 use libc;
 use ffmpeg_sys::{sws_scale, AVPixelFormat, SwsContext, sws_getContext, SWS_FAST_BILINEAR};
-use std::ptr::{null, null_mut};
+use std::ptr::{null, null_mut, copy_nonoverlapping};
 use std::os::raw::{c_int, c_void};
 use openh264_sys::*;
 use std::slice::from_raw_parts;
@@ -45,11 +45,34 @@ unsafe impl Send for Camcorder {
 }
 
 pub unsafe extern "C" fn frame_callback(target_ptr: *mut c_void, frame_ptr: *const webrtcelevator::webrtc_elevator_video_frame) {
-    let camcoder_arc = (target_ptr as *mut Arc<Mutex<RefCell<Camcorder>>>).as_ref().expect("camcoder");
+    let camcoder_arc = (target_ptr as *mut Arc<Mutex<Camcorder>>).as_ref().expect("camcoder");
     let frame = frame_ptr.as_ref().expect("frame ref");
+    let y_len = frame.width * frame.height;
+    let uv_width = (frame.width + 1) / 2;
+    let uv_len = uv_width * ((frame.height + 1) / 2);
 
-    println!("I'm called from C with value {}x{}", frame.width, frame.height);
-/*
+    let mut camcoder = camcoder_arc.lock().expect("lock camcoder");
+    
+    println!("I'm called from C with value {}x{} y={} uv={}", frame.width, frame.height, y_len, uv_len);
+
+    if camcoder.y_pixels.len() < y_len {
+        camcoder.y_pixels.resize(y_len, 0);
+    }
+    if camcoder.u_pixels.len() < uv_len {
+        camcoder.u_pixels.resize(uv_len, 0);
+    }
+    if camcoder.v_pixels.len() < uv_len {
+        camcoder.y_pixels.resize(uv_len, 0);
+    }
+    camcoder.y_stride = frame.width;
+    camcoder.u_stride = uv_width;
+    camcoder.v_stride = uv_width;
+
+    copy_nonoverlapping(frame.y, camcoder.y_pixels.as_mut_ptr(), y_len);
+    copy_nonoverlapping(frame.u, camcoder.u_pixels.as_mut_ptr(), uv_len);
+    copy_nonoverlapping(frame.v, camcoder.v_pixels.as_mut_ptr(), uv_len);
+    
+    /*
     unsafe {
         // コールバックから受け取った値でRustObjectの中の値をアップデートする
         (*target).a = a;
@@ -231,6 +254,7 @@ impl Camcorder {
             false
         };
         self.current_ms += self.frame_duration_ms;
+        /*        
         let now = Local::now();
         let text = now.format("%Y-%m-%d\n%H:%M:%S\n%f").to_string();
         if unsafe { MagickDrawImage(self.magick_wand.wand, self.background_drawing.wand) }
@@ -288,6 +312,7 @@ impl Camcorder {
         {
             panic!("Failed to execute sws_scale");
         }
+         */
 
         let mut info = SFrameBSInfo::default();
         let mut pic = SSourcePicture::default();
